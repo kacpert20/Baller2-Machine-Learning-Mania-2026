@@ -20,3 +20,11 @@ To odpowiada submissionowi: python_submission_manual_tuned_v2.csv
 M: Brier = 0.150494, logloss = 0.463883
 
 W: Brier = 0.103103, logloss = 0.328127
+
+MILESTONE2:
+
+4. ElasticNet(M) + hist_gb(W) — optuna_tuned
+To odpowiada submissionowi: final_submission_optuna_tuned_2026.csv
+
+M: Brier = 0.15426
+W: Brier = 0.08231
