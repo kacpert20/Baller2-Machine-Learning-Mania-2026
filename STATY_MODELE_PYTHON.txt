@@ -1,0 +1,230 @@
+Dorzucam jeszcze benchmark modeli w Pythonie na tych samych danych i tej samej walidacji 2025.
+
+Sprawdziłem kilka modeli na matchup features zbudowanych z Diff_* i Same_*, bez ręcznego tuningu, raczej jako pierwszy benchmark:
+
+Logistic Regression L2
+
+Logistic Regression L1
+
+Logistic Regression Elastic Net
+
+RandomForest
+
+ExtraTrees
+
+HistGradientBoosting
+
+XGBoost
+
+LightGBM
+
+CatBoost
+
+Wyniki dla M:
+
+logreg_l2
+Brier = 0.154774
+Logloss = 0.470032
+
+logreg_elastic
+Brier = 0.155692
+Logloss = 0.471290
+
+logreg_l1
+Brier = 0.156184
+Logloss = 0.472721
+
+rf
+Brier = 0.160829
+Logloss = 0.492622
+
+extra_trees
+Brier = 0.170670
+Logloss = 0.517093
+
+catboost
+Brier = 0.172970
+Logloss = 0.515778
+
+hist_gb
+Brier = 0.186244
+Logloss = 0.549843
+
+xgb
+Brier = 0.190731
+Logloss = 0.563893
+
+lgbm
+Brier = 0.195426
+Logloss = 0.576714
+
+Wnioski dla M:
+
+najlepszy z benchmarku Python okazał się zwykły logreg_l2
+
+ale i tak był gorszy od wcześniejszego modelu R z stepAIC both
+
+wcześniejszy model R miał:
+
+Brier = 0.150
+
+Logloss = 0.448
+
+więc na razie dla M najlepszy baseline nadal daje regresja logistyczna z selekcją cech, a nie boosting
+
+Dla najlepszego modelu Python M (logreg_l2) najwyższe współczynniki bezwzględne miały m.in.:
+
+Diff_AvgPF
+
+Diff_TOVForcedPctAvg
+
+Diff_MasseyRankStd
+
+Diff_FTRAllowedAvg
+
+Diff_MasseyRankWorst
+
+Diff_SeedNum
+
+Diff_FTRAvg
+
+Diff_HomeWins
+
+Diff_OppWinPctAvg
+
+Diff_ConferenceGames
+
+Czyli model męski w Pythonie nadal korzystał z mieszanki:
+
+strength of schedule
+
+seedów
+
+cech efektywności
+
+informacji z Massey
+
+i kilku cech kontekstowych sezonu
+
+Wyniki dla W:
+
+hist_gb
+Brier = 0.105033
+Logloss = 0.327025
+
+xgb
+Brier = 0.105874
+Logloss = 0.323618
+
+lgbm
+Brier = 0.107534
+Logloss = 0.329094
+
+catboost
+Brier = 0.111366
+Logloss = 0.342522
+
+rf
+Brier = 0.111658
+Logloss = 0.366929
+
+logreg_l1
+Brier = 0.118212
+Logloss = 0.361947
+
+logreg_elastic
+Brier = 0.126907
+Logloss = 0.378720
+
+extra_trees
+Brier = 0.134671
+Logloss = 0.433446
+
+logreg_l2
+Brier = 0.136420
+Logloss = 0.398242
+
+Wnioski dla W:
+
+tu boosting wyraźnie wygrał z regresją logistyczną
+
+najlepszy był HistGradientBoosting
+
+bardzo blisko były też XGBoost i LightGBM
+
+poprzedni model R dla W miał:
+
+Brier = 0.127
+
+Logloss = 0.709
+
+więc Pythonowy boosting zrobił bardzo duży upgrade jakości
+
+Czyli obecny stan jest taki:
+
+dla M najlepszy baseline nadal daje model liniowy z selekcją cech
+
+dla W najlepszy baseline daje boosting
+
+Na tym etapie planowałbym:
+
+dla M: redukcję cech i dopiero potem tuning logistic / xgb / histgb
+
+dla W: tuning hist_gb, xgb, lgbm, a potem ewentualnie blend 2–3 najlepszych modeli
+
+
+Po mini tuningu w Pythonie wyniki wyglądają tak:
+
+M:
+
+najlepszy tuned model: logreg_l2_top12, C=2.0
+
+Brier = 0.150494
+
+logloss = 0.463883
+
+To poprawiło wcześniejszy benchmark sklearn, ale nadal minimalnie przegrywa z moim wcześniejszym modelem z R:
+
+R stepAIC both:
+
+Brier = 0.150
+
+logloss = 0.448
+
+Wniosek dla M:
+
+dalej najlepiej działa prosty model liniowy
+
+kluczowa była redukcja cech do top 12
+
+boostingi nie przebiły dobrze wyselekcjonowanej logistyki
+
+W:
+
+najlepszy tuned model pod Brier: XGBoost
+
+Brier = 0.103103
+
+logloss = 0.328127
+
+najlepszy tuned model pod logloss też wyszedł XGBoost
+
+Brier = 0.103902
+
+logloss = 0.323017
+
+Wniosek dla W:
+
+tuning wyraźnie pomógł
+
+XGBoost jest teraz najlepszym kandydatem
+
+boosting wyraźnie wygrywa z regresją logistyczną
+
+Stan na teraz:
+
+dla M najlepszy kandydat: model R logistic + stepAIC
+
+dla W najlepszy kandydat: Python XGBoost po mini tuningu
+
+blend v2b mam zapisany, ale traktuję go na razie eksperymentalnie

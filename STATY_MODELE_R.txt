@@ -1,0 +1,198 @@
+Wrzucam update z baseline’u, który zrobiłem w R.
+
+Zbudowałem dwa osobne modele binarne, osobno dla M i osobno dla W.
+Target był zdefiniowany tak, jak w submission: model przewiduje P(niższy TeamID wygra z wyższym TeamID), czyli:
+
+Target = 1, jeśli wygrała drużyna o niższym TeamID
+Target = 0, jeśli wygrała drużyna o wyższym TeamID
+
+Pipeline był taki:
+
+Z RegularSeasonDetailedResults zrobiłem team-game-long, czyli każdy mecz zamieniłem na 2 rekordy: perspektywa drużyny i perspektywa rywala.
+
+Z tego zbudowałem portfolio drużyna-sezon.
+
+Potem z portfoliów złożyłem matchup dataset turniejowy, gdzie cechy są głównie różnicami typu Diff_X = X_Low - X_High.
+
+Model to glm(..., family = binomial()), potem stepAIC(direction = "both"), a dodatkowo usunąłem obserwacje wpływowe na podstawie Cook’s distance.
+
+Walidacja offline była na sezonie 2025.
+
+Finalny submission do 2026 został wytrenowany na 2014-2025.
+
+Wyniki:
+
+M:
+
+model: regresja logistyczna + stepAIC both + Cook
+
+Brier score na valid 2025: 0.150
+
+logloss na valid 2025: 0.448
+
+W:
+
+model: regresja logistyczna + stepAIC both + Cook
+
+Brier score na valid 2025: 0.127
+
+logloss na valid 2025: 0.709
+
+Najważniejsze:
+po Brierze oba modele są sensowne, a model W nawet lepszy niż M.
+Po loglossie model M wygląda dobrze, natomiast W wygląda na zbyt pewny części błędnych predykcji, więc tam prawdopodobnie przyda się kalibracja albo clipping prawdopodobieństw.
+
+Wybrane cechy finalne:
+
+M:
+
+Diff_NetRtgAvg
+
+Diff_OppNetRtgAvg
+
+Diff_DRBPctAvg
+
+W:
+
+Diff_SeedNum
+
+Diff_NetRtgAvg
+
+Diff_OppNetRtgAvg
+
+Same_ConfAbbrev
+
+Diff_Last5WinPct
+
+Diff_Last10NetRtgAvg
+
+Definicje cech:
+
+Diff_X = X_Low - X_High, gdzie:
+
+Low = drużyna o niższym TeamID
+
+High = drużyna o wyższym TeamID
+
+Czyli dodatnia wartość zwykle oznacza przewagę drużyny Low w danej cesze, a ujemna przewagę drużyny High.
+
+NetRtgAvg
+To średni Net Rating drużyny w sezonie regularnym.
+
+Najpierw na poziomie pojedynczego meczu liczyłem:
+
+Poss_g = 0.5 * ((FGA_g - OR_g + TO_g + 0.475FTA_g) + (OppFGA_g - OppOR_g + OppTO_g + 0.475OppFTA_g))
+
+OffRtg_g = 100 * TeamScore_g / Poss_g
+
+DefRtg_g = 100 * OppScore_g / Poss_g
+
+NetRtg_g = OffRtg_g - DefRtg_g
+
+Potem:
+
+NetRtgAvg(team, season) = średnia z NetRtg_g po wszystkich meczach sezonu regularnego
+
+I finalnie:
+
+Diff_NetRtgAvg = NetRtgAvg_Low - NetRtgAvg_High
+
+Interpretacja: dodatnia wartość oznacza, że drużyna Low miała lepszy bilans jakości gry na 100 posiadań.
+
+OppNetRtgAvg
+To średnia siła przeciwników drużyny, liczona przez ich sezonowy NetRtgAvg.
+
+Dla każdej drużyny:
+
+brałem wszystkich jej przeciwników z sezonu regularnego
+
+każdemu przeciwnikowi przypisywałem jego własny NetRtgAvg
+
+liczyłem z tego średnią
+
+Czyli:
+
+OppNetRtgAvg(team, season) = średnia z NetRtgAvg przeciwników tej drużyny
+
+A potem:
+
+Diff_OppNetRtgAvg = OppNetRtgAvg_Low - OppNetRtgAvg_High
+
+Interpretacja: to uproszczony strength of schedule.
+Im wyżej, tym trudniejszy przeciętny harmonogram rywali miała drużyna Low.
+
+DRBPctAvg
+To średni Defensive Rebound Percentage drużyny.
+
+Na poziomie meczu:
+
+DRBPct_g = DR_g / (DR_g + OppOR_g)
+
+gdzie:
+
+DR_g = defensive rebounds drużyny
+
+OppOR_g = offensive rebounds rywala
+
+Potem:
+
+DRBPctAvg(team, season) = średnia z DRBPct_g po sezonie
+
+A finalnie:
+
+Diff_DRBPctAvg = DRBPctAvg_Low - DRBPctAvg_High
+
+Interpretacja: jak dobrze drużyna kończy posiadania rywala przez defensywną zbiórkę.
+
+SeedNum
+To liczba seeda wyciągnięta z NCAATourneySeeds, np.:
+
+W01 -> 1
+
+X12 -> 12
+
+Z16a -> 16
+
+Czyli:
+
+Diff_SeedNum = SeedNum_Low - SeedNum_High
+
+Uwaga: niższy seed number jest lepszy, więc tutaj bardziej ujemna wartość zwykle oznacza przewagę drużyny Low w rozstawieniu.
+
+Same_ConfAbbrev
+Flaga binarna:
+
+Same_ConfAbbrev = 1, jeśli obie drużyny są z tej samej konferencji
+Same_ConfAbbrev = 0 w przeciwnym razie
+
+Last5WinPct
+To forma z ostatnich 5 meczów sezonu regularnego:
+
+Last5WinPct(team, season) = liczba zwycięstw w ostatnich 5 meczach / liczba tych meczów
+
+Potem:
+
+Diff_Last5WinPct = Last5WinPct_Low - Last5WinPct_High
+
+Last10NetRtgAvg
+To średni NetRtg z ostatnich 10 meczów sezonu regularnego:
+
+Last10NetRtgAvg(team, season) = średnia NetRtg z ostatnich 10 meczów
+
+Potem:
+
+Diff_Last10NetRtgAvg = Last10NetRtgAvg_Low - Last10NetRtgAvg_High
+
+Interpretacja: świeża forma jakości gry.
+
+Wnioski z baseline’u:
+
+dla M model sam wybrał bardzo prosty zestaw: jakość drużyny, siła terminarza i defensywna zbiórka
+
+dla W weszły: seed, NetRating, strength of schedule i świeża forma
+
+co ciekawe, mimo że dodałem Massey dla M, finalny stepAIC go nie zostawił w ostatecznej specyfikacji; wygląda na to, że informacja z rankingów została częściowo przejęta przez NetRtg / OppNetRtg i inne skorelowane cechy
+
+To traktuję jako baseline.
+Offline 2025 wygląda to sensownie, ale nie zakładam 1:1, że leaderboard 2026 wyjdzie identycznie.
+Przy takim baseline nie zdziwi mnie wynik gdzieś w okolicach średniaka, natomiast pipeline już działa i da się na nim budować mocniejsze modele w Pythonie

@@ -1,0 +1,22 @@
+1. AICboth
+To jest submission z R: submission_stepAIC_both.csv
+
+M: Brier = 0.150, logloss = 0.448
+
+W: Brier = 0.127, logloss = 0.709
+
+
+2. L2(M) + hist_gb(W) — single
+To odpowiada submissionowi: python_submission_best_single_model.csv
+
+M: Brier = 0.154774, logloss = 0.470032
+
+W: Brier = 0.105033, logloss = 0.327025
+
+
+3. L2_reduced(M) + xgb(W) — v2
+To odpowiada submissionowi: python_submission_manual_tuned_v2.csv
+
+M: Brier = 0.150494, logloss = 0.463883
+
+W: Brier = 0.103103, logloss = 0.328127
